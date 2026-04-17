@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incident Report: billing.tooFast — 2026-04-03</title>
+<style>
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+    --color-bg: #ffffff;
+    --color-bg-secondary: #f5f5f4;
+    --color-bg-tertiary: #ebebea;
+    --color-text: #1a1a1a;
+    --color-text-secondary: #6b6b6b;
+    --color-text-tertiary: #9a9a9a;
+    --color-border: rgba(0,0,0,0.12);
+    --color-border-light: rgba(0,0,0,0.06);
+    --color-info: #378ADD;
+    --color-info-bg: #E6F1FB;
+    --color-info-text: #0C447C;
+    --color-danger: #E24B4A;
+    --color-danger-bg: #FCEBEB;
+    --color-success: #639922;
+    --color-success-bg: #EAF3DE;
+    --color-success-text: #27500A;
+    --color-warning-bg: #FAEEDA;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg: #1a1a1a;
+      --color-bg-secondary: #2a2a2a;
+      --color-bg-tertiary: #333333;
+      --color-text: #e8e8e8;
+      --color-text-secondary: #a0a0a0;
+      --color-text-tertiary: #707070;
+      --color-border: rgba(255,255,255,0.12);
+      --color-border-light: rgba(255,255,255,0.06);
+      --color-info-bg: #0C447C;
+      --color-info-text: #B5D4F4;
+      --color-danger-bg: #501313;
+      --color-success-bg: #173404;
+      --color-success-text: #C0DD97;
+      --color-warning-bg: #412402;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font-sans); color: var(--color-text); background: var(--color-bg); line-height: 1.5; padding: 2rem; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: var(--color-text-secondary); margin-bottom: 1.5rem; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 20px; }
+  .badge-danger { background: var(--color-danger-bg); color: var(--color-danger); }
+  .badge-success { background: var(--color-success-bg); color: var(--color-success-text); }
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 6px 14px; font-size: 13px; border-radius: var(--radius-md); cursor: pointer; border: 0.5px solid var(--color-border); background: transparent; color: var(--color-text-secondary); transition: all .15s; font-family: var(--font-sans); }
+  .tab:hover { background: var(--color-bg-secondary); }
+  .tab.active { background: var(--color-info-bg); color: var(--color-info-text); border-color: var(--color-info); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .metric-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .metric { background: var(--color-bg-secondary); border-radius: var(--radius-md); padding: 12px 16px; }
+  .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 500; }
+  .metric-value.danger { color: var(--color-danger); }
+  .metric-value.success { color: var(--color-success); }
+  .timeline { position: relative; padding-left: 20px; border-left: 2px solid var(--color-border); margin: 0 0 1rem 10px; }
+  .tl-item { position: relative; padding: 0 0 20px 16px; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-dot { position: absolute; left: -27px; top: 3px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid; }
+  .tl-dot.red { border-color: #E24B4A; background: #FCEBEB; }
+  .tl-dot.green { border-color: #639922; background: #EAF3DE; }
+  .tl-dot.blue { border-color: #378ADD; background: #E6F1FB; }
+  .tl-dot.amber { border-color: #BA7517; background: #FAEEDA; }
+  .tl-time { font-size: 12px; color: var(--color-text-tertiary); font-family: var(--font-mono); }
+  .tl-title { font-size: 14px; font-weight: 500; margin: 2px 0; }
+  .tl-desc { font-size: 13px; color: var(--color-text-secondary); }
+  .org-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .org-table th { text-align: left; font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); font-size: 12px; }
+  .org-table td { padding: 7px 10px; border-bottom: 0.5px solid var(--color-border-light); }
+  .org-table tr:last-child td { font-weight: 500; border-bottom: none; }
+  .bar-cell { display: flex; align-items: center; gap: 8px; }
+  .bar { height: 14px; border-radius: 3px; background: #E24B4A; opacity: 0.7; min-width: 2px; }
+  .cause-box { background: var(--color-bg-secondary); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; }
+  .cause-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .cause-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+  .cause-desc code { font-size: 12px; font-family: var(--font-mono); background: var(--color-bg-tertiary); padding: 1px 5px; border-radius: 4px; }
+  .compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .compare-card { border-radius: var(--radius-lg); padding: 1rem; border: 0.5px solid var(--color-border); }
+  .compare-card.before { border-left: 3px solid #E24B4A; }
+  .compare-card.after { border-left: 3px solid #639922; }
+  .compare-header { font-size: 12px; font-weight: 500; margin-bottom: 10px; color: var(--color-text-secondary); }
+  .compare-metric { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 0.5px solid var(--color-border-light); }
+  .compare-metric:last-child { border-bottom: none; }
+  .compare-metric span:first-child { color: var(--color-text-secondary); }
+  .section-label { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lock-viz { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+  .thread-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .thread-label { width: 60px; color: var(--color-text-tertiary); font-family: var(--font-mono); text-align: right; flex-shrink: 0; }
+  .thread-bar-wrap { flex: 1; height: 18px; background: var(--color-bg-secondary); border-radius: 3px; position: relative; overflow: hidden; }
+  .thread-seg { position: absolute; top: 0; height: 100%; border-radius: 2px; }
+  .seg-wait { background: #F09595; }
+  .seg-fail { background: #E24B4A; }
+  .legend-row { display: flex; gap: 16px; margin: 8px 0 0; font-size: 12px; color: var(--color-text-secondary); }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .wait-label { font-size: 11px; color: var(--color-text-tertiary); flex-shrink: 0; }
+  @media (max-width: 600px) {
+    body { padding: 1rem; }
+    .compare-row { grid-template-columns: 1fr; }
+    .metric-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<h1>Incident: subscription renewal failures <span class="badge badge-danger">High severity</span></h1>
+<p class="subtitle">2026-04-03 &middot; ms-billing &middot; <code>billing.tooFast</code> &middot; Resolved <span class="badge badge-success">Fixed Apr 11</span></p>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPanel('timeline')">Timeline</button>
+  <button class="tab" onclick="showPanel('impact')">Impact</button>
+  <button class="tab" onclick="showPanel('cause')">Root cause</button>
+  <button class="tab" onclick="showPanel('resolution')">Resolution</button>
+</div>
+
+<!-- TIMELINE -->
+<div id="timeline" class="panel active">
+  <div class="metric-row">
+    <div class="metric"><div class="metric-label">Severity</div><div class="metric-value danger">High</div></div>
+    <div class="metric"><div class="metric-label">Failures</div><div class="metric-value danger">9</div></div>
+    <div class="metric"><div class="metric-label">Subscriptions affected</div><div class="metric-value">1,285</div></div>
+    <div class="metric"><div class="metric-label">Recovery delay</div><div class="metric-value">3 days</div></div>
+  </div>
+  <div class="section-label">Event timeline</div>
+  <div class="timeline">
+    <div class="tl-item"><div class="tl-dot red"></div><div class="tl-time">Apr 3, 08:00 SGT</div><div class="tl-title">Batch processing begins</div><div class="tl-desc">~6,600 subscription submits start. Peak 23 req/s with 13 concurrent threads.</div></div>
+    <div class="tl-item"><div class="tl-dot red"></div><div class="tl-time">08:00:49 — 08:05:52</div><div class="tl-title">9 requests fail with billing.tooFast</div><div class="tl-desc">Each failure aborts the entire org's renewal batch. All 9 threads hit the 5s lock timeout.</div></div>
+    <div class="tl-item"><div class="tl-dot amber"></div><div class="tl-time">Apr 3 — Apr 5</div><div class="tl-title">Weekend gap — no retry</div><div class="tl-desc">1,285 subscriptions across 9 orgs remain un-renewed for 3 days.</div></div>
+    <div class="tl-item"><div class="tl-dot blue"></div><div class="tl-time">Apr 6 (Monday)</div><div class="tl-title">Subscriptions recovered</div><div class="tl-desc">All 1,285 subscriptions renewed successfully on the next business day batch run.</div></div>
+    <div class="tl-item"><div class="tl-dot green"></div><div class="tl-time">Apr 11</div><div class="tl-title">Fix deployed — commit 5cd440c5b</div><div class="tl-desc">Fair local lock introduced. FIFO ordering within JVM, 20ms yield interval.</div></div>
+    <div class="tl-item"><div class="tl-dot green"></div><div class="tl-time">Apr 14</div><div class="tl-title">Verified — zero failures</div><div class="tl-desc">4,974 submits processed with 0 errors. Max lock wait dropped to 900ms.</div></div>
+  </div>
+</div>
+
+<!-- IMPACT -->
+<div id="impact" class="panel">
+  <div class="section-label">Affected organizations (Singtel CPaaS)</div>
+  <div style="overflow-x: auto;">
+    <table class="org-table">
+      <tr><th>Organization</th><th>Subscriptions</th></tr>
+      <tr><td>Singtel Ltd (OC)</td><td class="bar-cell"><span>600</span><div class="bar" style="width:100%"></div></td></tr>
+      <tr><td>MECOMB Singapore</td><td class="bar-cell"><span>294</span><div class="bar" style="width:49%"></div></td></tr>
+      <tr><td>TEHO Ropes &amp; Supplies</td><td class="bar-cell"><span>91</span><div class="bar" style="width:15.2%"></div></td></tr>
+      <tr><td>Toshiba Electronics Asia</td><td class="bar-cell"><span>82</span><div class="bar" style="width:13.7%"></div></td></tr>
+      <tr><td>CPG Facilities Management</td><td class="bar-cell"><span>71</span><div class="bar" style="width:11.8%"></div></td></tr>
+      <tr><td>Samaritans of Singapore</td><td class="bar-cell"><span>60</span><div class="bar" style="width:10%"></div></td></tr>
+      <tr><td>Kumon Asia &amp; Oceania</td><td class="bar-cell"><span>60</span><div class="bar" style="width:10%"></div></td></tr>
+      <tr><td>Ambulance Medical Service</td><td class="bar-cell"><span>21</span><div class="bar" style="width:3.5%"></div></td></tr>
+      <tr><td>WOW Gadgets</td><td class="bar-cell"><span>6</span><div class="bar" style="width:1%"></div></td></tr>
+      <tr><td>Total</td><td class="bar-cell"><span>1,285</span></td></tr>
+    </table>
+  </div>
+
+  <div style="margin-top: 1.25rem;">
+    <div class="section-label">Failure window — 08:00:49 to 08:05:52 SGT</div>
+    <div class="lock-viz">
+      <div class="thread-row"><span class="thread-label">Kumon</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:0%;width:16%"></div><div class="thread-seg seg-fail" style="left:16%;width:2%"></div></div><span class="wait-label">5.1s</span></div>
+      <div class="thread-row"><span class="thread-label">WOW</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:0.5%;width:16.5%"></div><div class="thread-seg seg-fail" style="left:17%;width:2%"></div></div><span class="wait-label">5.2s</span></div>
+      <div class="thread-row"><span class="thread-label">SOS</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:1%;width:16.5%"></div><div class="thread-seg seg-fail" style="left:17.5%;width:2%"></div></div><span class="wait-label">5.2s</span></div>
+      <div class="thread-row"><span class="thread-label">Singtel</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:2%;width:16.5%"></div><div class="thread-seg seg-fail" style="left:18.5%;width:2%"></div></div><span class="wait-label">5.1s</span></div>
+      <div class="thread-row"><span class="thread-label">TEHO</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:39%;width:16.5%"></div><div class="thread-seg seg-fail" style="left:55.5%;width:2%"></div></div><span class="wait-label">5.1s</span></div>
+      <div class="thread-row"><span class="thread-label">CPG</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:59%;width:16.5%"></div><div class="thread-seg seg-fail" style="left:75.5%;width:2%"></div></div><span class="wait-label">5.1s</span></div>
+      <div class="thread-row"><span class="thread-label">AMS</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:72%;width:16.5%"></div><div class="thread-seg seg-fail" style="left:88.5%;width:2%"></div></div><span class="wait-label">5.1s</span></div>
+      <div class="thread-row"><span class="thread-label">MECOMB</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:76%;width:16.5%"></div><div class="thread-seg seg-fail" style="left:92.5%;width:2%"></div></div><span class="wait-label">5.2s</span></div>
+      <div class="thread-row"><span class="thread-label">Toshiba</span><div class="thread-bar-wrap"><div class="thread-seg seg-wait" style="left:96%;width:4%"></div></div><span class="wait-label">5.1s</span></div>
+    </div>
+    <div class="legend-row">
+      <div class="legend-item"><div class="legend-dot" style="background:#F09595"></div>Waiting for lock</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E24B4A"></div>Timeout (5s)</div>
+    </div>
+  </div>
+</div>
+
+<!-- CAUSE -->
+<div id="cause" class="panel">
+  <div class="section-label">Lock mechanism</div>
+  <div class="cause-box">
+    <div class="cause-title">Global distributed lock</div>
+    <div class="cause-desc">All subscription submits share a single lock (<code>subscriptionSubmit</code>) using <code>SELECT ... FOR UPDATE</code> on a DB row. Lock hold time is only ~15–30ms.</div>
+  </div>
+  <div class="cause-box">
+    <div class="cause-title">Unfair polling</div>
+    <div class="cause-desc">When the lock is held, threads sleep 100ms then retry. InnoDB wakes waiters in no particular order — newer threads can "cut in line" ahead of older ones. No FIFO guarantee.</div>
+  </div>
+  <div class="cause-box">
+    <div class="cause-title">Starvation under load</div>
+    <div class="cause-desc">At 23 req/s with 13 concurrent threads, 9 unlucky threads kept losing the poll race for the full 5s timeout. During each failure, ~50 other threads acquired and released the lock successfully (~20ms each).</div>
+  </div>
+
+  <div style="margin-top:1.25rem">
+    <div class="section-label">Example: failed request at 08:04:03</div>
+    <div style="display:flex;gap:4px;align-items:stretch;margin:8px 0;">
+      <div style="flex:0 0 14%;background:#85B7EB;border-radius:4px 0 0 4px;padding:8px;font-size:11px;color:#042C53;display:flex;flex-direction:column;justify-content:center;text-align:center;"><span style="font-weight:500">Pre-lock</span><span>838ms</span></div>
+      <div style="flex:0 0 86%;background:#F09595;border-radius:0 4px 4px 0;padding:8px;font-size:11px;color:#501313;display:flex;flex-direction:column;justify-content:center;text-align:center;position:relative;"><span style="font-weight:500">Lock wait — timed out</span><span>5,041ms</span><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:18px;opacity:0.4">&#10005;</span></div>
+    </div>
+    <div style="font-size:12px;color:var(--color-text-tertiary);margin-top:4px;">Total: 5,881ms — 50+ threads succeeded during this thread's 5s wait</div>
+  </div>
+</div>
+
+<!-- RESOLUTION -->
+<div id="resolution" class="panel">
+  <div class="section-label">Fix: two-level fair lock (commit 5cd440c5b)</div>
+  <div class="cause-box">
+    <div class="cause-title">1. Local fair lock</div>
+    <div class="cause-desc"><code>ReentrantLock(fair=true)</code> per lock name in a ConcurrentHashMap. Threads within the same JVM queue in strict FIFO order. Only the front-of-queue thread attempts the DB lock.</div>
+  </div>
+  <div class="cause-box">
+    <div class="cause-title">2. DB distributed lock (unchanged)</div>
+    <div class="cause-desc">Same <code>SELECT FOR UPDATE</code>, but now sees at most 2 concurrent competitors (one per JVM instance).</div>
+  </div>
+  <div class="cause-box">
+    <div class="cause-title">3. 20ms yield + retry</div>
+    <div class="cause-desc">Prevents one JVM from monopolizing the DB lock. With 2 JVMs and ~50ms amortized throughput, capacity is ~40 locks/sec — well above the 23 req/s peak.</div>
+  </div>
+
+  <div style="margin-top:1.25rem">
+    <div class="section-label">Before vs. after</div>
+    <div class="compare-row">
+      <div class="compare-card before">
+        <div class="compare-header" style="color:#A32D2D">Apr 3 (before)</div>
+        <div class="compare-metric"><span>billing.tooFast errors</span><span style="color:#E24B4A;font-weight:500">9</span></div>
+        <div class="compare-metric"><span>Lock wait p50</span><span>100–350ms</span></div>
+        <div class="compare-metric"><span>Lock wait p90</span><span>500ms+</span></div>
+        <div class="compare-metric"><span>Lock wait p99</span><span>5,000ms</span></div>
+        <div class="compare-metric"><span>Lock wait max</span><span style="color:#E24B4A">5,169ms</span></div>
+        <div class="compare-metric"><span>Waits &gt; 1s</span><span style="color:#E24B4A">9</span></div>
+      </div>
+      <div class="compare-card after">
+        <div class="compare-header" style="color:#3B6D11">Apr 14 (after)</div>
+        <div class="compare-metric"><span>billing.tooFast errors</span><span style="color:#639922;font-weight:500">0</span></div>
+        <div class="compare-metric"><span>Lock wait p50</span><span>20ms</span></div>
+        <div class="compare-metric"><span>Lock wait p90</span><span>215ms</span></div>
+        <div class="compare-metric"><span>Lock wait p99</span><span>900ms</span></div>
+        <div class="compare-metric"><span>Lock wait max</span><span style="color:#639922">900ms</span></div>
+        <div class="compare-metric"><span>Waits &gt; 1s</span><span style="color:#639922">0</span></div>
+      </div>
+    </div>
+    <div style="font-size: 12px; color: var(--color-text-tertiary); text-align: center;">4,974 submits processed on Apr 14 with zero errors</div>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <div class="section-label">Prevention measures</div>
+    <div class="cause-box">
+      <div class="cause-title">Alert on any billing.tooFast</div>
+      <div class="cause-desc">A single occurrence should page — it's a leading indicator of lock contention.</div>
+    </div>
+    <div class="cause-box">
+      <div class="cause-title">Caller-side retry with jitter</div>
+      <div class="cause-desc">Exponential backoff + jitter before aborting a batch. Defense-in-depth against future lock regressions.</div>
+    </div>
+    <div class="cause-box">
+      <div class="cause-title">Best-effort batch processing</div>
+      <div class="cause-desc">Don't abort an entire org batch on a single-item failure. Continue other items, retry failed ones at the end.</div>
+    </div>
+    <div class="cause-box">
+      <div class="cause-title">Document lock semantics</div>
+      <div class="cause-desc">LockService Javadoc should state FIFO fairness guarantees and ~20ms DB granularity to prevent future "optimizations" from reintroducing starvation.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector('[onclick="showPanel(\'' + id + '\')"]').classList.add('active');
+}
+</script>
+</body>
+</html>
